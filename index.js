@@ -1,10 +1,37 @@
-const http = require("http");
+const express = require('express')
+const midtransClient = require('midtrans-client')
 
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Backend jalan 🚀");
-});
+const app = express()
+app.use(express.json())
 
-server.listen(3000, () => {
-  console.log("Server running on port 3000");
-});
+let snap = new midtransClient.Snap({
+  isProduction: false,
+  serverKey: process.env.MIDTRANS_SERVER_KEY
+})
+
+app.get('/', (req, res) => {
+  res.send('Backend jalan 🚀')
+})
+
+app.post('/create-transaction', async (req, res) => {
+
+  const { order_id, gross_amount } = req.body
+
+  let parameter = {
+    transaction_details: {
+      order_id: order_id,
+      gross_amount: gross_amount
+    }
+  }
+
+  try {
+    const transaction = await snap.createTransaction(parameter)
+    res.json({ token: transaction.token })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+
+})
+
+const PORT = process.env.PORT || 3000
+app.listen(PORT, () => console.log('Server running'))

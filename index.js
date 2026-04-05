@@ -28,8 +28,9 @@ app.post('/create-transaction', async (req, res) => {
     const transaction = await snap.createTransaction(parameter)
     res.json({ token: transaction.token })
   } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+  console.error("MIDTRANS ERROR:", err)
+  res.status(500).json({ error: err.message })
+}
 
 })
 

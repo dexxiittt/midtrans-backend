@@ -1,22 +1,13 @@
-const express = require('express')
-const cors = require('cors')
+export default function handler(req, res) {
+  if (req.method === "GET") {
+    if (req.url === "/api/health") {
+      return res.status(200).send("OK");
+    }
 
-const app = express()
+    return res.status(200).json({
+      message: "Backend jalan di Vercel 🚀"
+    });
+  }
 
-app.use(express.json())
-app.use(cors())
-
-app.get('/', (req, res) => {
-  res.send('Backend jalan 🚀')
-})
-
-app.get('/health', (req, res) => {
-  res.send('OK')
-})
-
-// ✅ fallback HARUS ADA
-const PORT = process.env.PORT || 3000
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('Server running on port', PORT)
-})
+  res.status(405).json({ message: "Method not allowed" });
+}

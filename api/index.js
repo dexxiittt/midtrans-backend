@@ -1,6 +1,6 @@
 export default (req, res) => {
   res.status(200).json({
-    message: "Backend jalan di Vercel 🚀"
+    message: "Backend jalan"
   });
 };
 

@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       // ============================================================
       if (body.transaction_status && body.order_id) {
         
-        // 🔒 VERIFIKASI SIGNATURE KEY MIDTRANS (ANTI-HACK / ANTI-FAKE WEBHOOK)
+        // VERIFIKASI SIGNATURE KEY MIDTRANS (ANTI-HACK / ANTI-FAKE WEBHOOK)
         if (body.signature_key && body.status_code && body.gross_amount) {
           const rawSignature = `${body.order_id}${body.status_code}${body.gross_amount}${serverKey}`;
           const calculatedSignature = crypto.createHash('sha512').update(rawSignature).digest('hex');

@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       // ============================================================
       if (body.transaction_status && body.order_id) {
         
-        // VERIFIKASI SIGNATURE KEY MIDTRANS (ANTI-HACK / ANTI-FAKE WEBHOOK)
+        // 🔒 VERIFIKASI SIGNATURE KEY MIDTRANS (ANTI-HACK / ANTI-FAKE WEBHOOK)
         if (body.signature_key && body.status_code && body.gross_amount) {
           const rawSignature = `${body.order_id}${body.status_code}${body.gross_amount}${serverKey}`;
           const calculatedSignature = crypto.createHash('sha512').update(rawSignature).digest('hex');
@@ -56,19 +56,17 @@ export default async function handler(req, res) {
         // Jika transaksi berhasil (settlement atau capture)
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
           
-          // (Opsional) URL Webhook Google Apps Script milikmu jika ingin update otomatis ke Google Sheet
-          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbx_YOUR_APPS_SCRIPT_ID/exec";
+          // URL Webhook Google Apps Script kamu untuk update otomatis ke Google Sheet
+          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbyZOu_dB5Hr7ZJkwzrCUeTBz6L-mdMXfHf9bkO5XnVNxADTpG-uWx5PNfi5pyH0KOKY5Q/exec";
 
-          if (sheetWebhookUrl && !sheetWebhookUrl.includes("YOUR_APPS_SCRIPT_ID")) {
-            await fetch(sheetWebhookUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                invoice: cleanInvoice,
-                status: "success"
-              })
-            }).catch(err => console.error("Gagal sync ke Sheet:", err));
-          }
+          await fetch(sheetWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              invoice: cleanInvoice,
+              status: "success"
+            })
+          }).catch(err => console.error("Gagal sync ke Sheet:", err));
         }
 
         // Beri respon 200 OK ke Midtrans agar tidak dikirim ulang

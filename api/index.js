@@ -22,10 +22,49 @@ export default async function handler(req, res) {
     });
   }
 
-  // 3. POST Request: Menerima Order ID & Total dari Frontend, lalu meminta Snap Token
+  // 3. POST Request: Menangani Webhook Midtrans ATAU Request Token dari Frontend
   if (req.method === 'POST') {
     try {
-      const { orderId, amount } = req.body || {};
+      const body = req.body || {};
+
+      // ============================================================
+      // A. JIKA INI NOTIFIKASI WEBHOOK DARI MIDTRANS
+      // ============================================================
+      if (body.transaction_status && body.order_id) {
+        const transactionStatus = body.transaction_status;
+        const rawOrderId = body.order_id;
+
+        // Ambil invoiceID asli (menghapus suffix timestamp unik)
+        const cleanInvoice = rawOrderId.split('-')[0];
+
+        console.log(`[Webhook Midtrans] Invoice: ${cleanInvoice} | Status: ${transactionStatus}`);
+
+        // Jika transaksi berhasil (settlement atau capture)
+        if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
+          
+          // (Opsional) URL Webhook Google Apps Script milikmu jika ingin update otomatis ke Google Sheet
+          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbx_YOUR_APPS_SCRIPT_ID/exec";
+
+          if (sheetWebhookUrl && !sheetWebhookUrl.includes("YOUR_APPS_SCRIPT_ID")) {
+            await fetch(sheetWebhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                invoice: cleanInvoice,
+                status: "success"
+              })
+            }).catch(err => console.error("Gagal sync ke Sheet:", err));
+          }
+        }
+
+        // Beri respon 200 OK ke Midtrans agar tidak dikirim ulang
+        return res.status(200).json({ status: "OK", message: "Webhook processed successfully" });
+      }
+
+      // ============================================================
+      // B. JIKA INI REQUEST BIASA DARI FRONTEND (MEMINTA SNAP TOKEN)
+      // ============================================================
+      const { orderId, amount } = body;
 
       if (!orderId || !amount) {
         return res.status(400).json({ error: "orderId dan amount wajib diisi!" });
@@ -47,11 +86,12 @@ export default async function handler(req, res) {
       // Buat transaksi di Midtrans
       const transaction = await snap.createTransaction(parameter);
 
-      // Kirim Snap Token balik ke Frontend
+      // Kirim Snap Token & Redirect URL balik ke Frontend
       return res.status(200).json({
         token: transaction.token,
         redirect_url: transaction.redirect_url
       });
+
     } catch (error) {
       console.error("Midtrans Error:", error);
       return res.status(500).json({ error: error.message });

@@ -56,8 +56,8 @@ export default async function handler(req, res) {
         // Jika transaksi berhasil (settlement atau capture)
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
           
-          // URL Webhook Google Apps Script kamu untuk update otomatis ke Google Sheet
-          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbyZOu_dB5Hr7ZJkwzrCUeTBz6L-mdMXfHf9bkO5XnVNxADTpG-uWx5PNfi5pyH0KOKY5Q/exec";
+          // URL WEBHOOK GOOGLE APPS SCRIPT
+          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbxfoEEoJ6bPwUlak89CrBuBx_ZjERZaKmftXY29ywqcEgfHxvyRkDSnmH-0sNjyaq0h0g/exec";
 
           await fetch(sheetWebhookUrl, {
             method: 'POST',

@@ -1,4 +1,5 @@
 import midtransClient from 'midtrans-client';
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
   // 1. Setting Header CORS (Agar bisa dipanggil dari GitHub Pages)
@@ -26,18 +27,31 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const body = req.body || {};
+      const serverKey = process.env.MIDTRANS_SERVER_KEY;
 
       // ============================================================
       // A. JIKA INI NOTIFIKASI WEBHOOK DARI MIDTRANS
       // ============================================================
       if (body.transaction_status && body.order_id) {
+        
+        // VERIFIKASI SIGNATURE KEY MIDTRANS (ANTI-HACK / ANTI-FAKE WEBHOOK)
+        if (body.signature_key && body.status_code && body.gross_amount) {
+          const rawSignature = `${body.order_id}${body.status_code}${body.gross_amount}${serverKey}`;
+          const calculatedSignature = crypto.createHash('sha512').update(rawSignature).digest('hex');
+
+          if (calculatedSignature !== body.signature_key) {
+            console.warn("[SECURITY ALERT] Signature Key tidak cocok! Request dipastikan palsu.");
+            return res.status(403).json({ error: "Invalid signature key!" });
+          }
+        }
+
         const transactionStatus = body.transaction_status;
         const rawOrderId = body.order_id;
 
         // Ambil invoiceID asli (menghapus suffix timestamp unik)
         const cleanInvoice = rawOrderId.split('-')[0];
 
-        console.log(`[Webhook Midtrans] Invoice: ${cleanInvoice} | Status: ${transactionStatus}`);
+        console.log(`[Verified Webhook] Invoice: ${cleanInvoice} | Status: ${transactionStatus}`);
 
         // Jika transaksi berhasil (settlement atau capture)
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
@@ -58,7 +72,7 @@ export default async function handler(req, res) {
         }
 
         // Beri respon 200 OK ke Midtrans agar tidak dikirim ulang
-        return res.status(200).json({ status: "OK", message: "Webhook processed successfully" });
+        return res.status(200).json({ status: "OK", message: "Webhook verified & processed successfully" });
       }
 
       // ============================================================
@@ -73,7 +87,7 @@ export default async function handler(req, res) {
       // Inisialisasi Midtrans Snap Client
       const snap = new midtransClient.Snap({
         isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
-        serverKey: process.env.MIDTRANS_SERVER_KEY
+        serverKey: serverKey
       });
 
       const parameter = {

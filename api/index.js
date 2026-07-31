@@ -44,7 +44,8 @@ export default async function handler(req, res) {
         const infoPelanggan = body.custom_field2 || body.informasi_pelanggan || body.customer_info || "";
 
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
-          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbxb8OXv8jj2A4tISbOjxIPF1jqm07K3zowleSnh9a5nlgnDrIV2B4pMKkx8f9ua0OvMbA/exec";
+          // --- URL DEPLOYMENT BARU ---
+          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbwCIJsmHscoETC_Hq8aqmxHKeSBhWaVT6jMZtkOjvfnNwJm5TdHnm_373Z22VGsfTszA/exec";
 
           await fetch(sheetWebhookUrl, {
             method: 'POST',

@@ -2,7 +2,6 @@ import midtransClient from 'midtrans-client';
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
-  // 1. Setting Header CORS (Agar bisa dipanggil dari GitHub Pages)
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
@@ -11,19 +10,12 @@ export default async function handler(req, res) {
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
-  // Handle Preflight Request dari Browser
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // 2. GET Request: Untuk tes apakah backend aktif di browser
   if (req.method === 'GET') {
-    return res.status(200).json({
-      message: "Backend Midtrans Vercel Aktif & Siap Digunakan!"
-    });
+    return res.status(200).json({ message: "Backend Midtrans Vercel Aktif!" });
   }
 
-  // 3. POST Request: Menangani Webhook Midtrans ATAU Request Token dari Frontend
   if (req.method === 'POST') {
     try {
       const body = req.body || {};
@@ -34,55 +26,49 @@ export default async function handler(req, res) {
       // ============================================================
       if (body.transaction_status && body.order_id) {
         
-        // VERIFIKASI SIGNATURE KEY MIDTRANS (ANTI-HACK / ANTI-FAKE WEBHOOK)
         if (body.signature_key && body.status_code && body.gross_amount) {
           const rawSignature = `${body.order_id}${body.status_code}${body.gross_amount}${serverKey}`;
           const calculatedSignature = crypto.createHash('sha512').update(rawSignature).digest('hex');
 
           if (calculatedSignature !== body.signature_key) {
-            console.warn("[SECURITY ALERT] Signature Key tidak cocok! Request dipastikan palsu.");
             return res.status(403).json({ error: "Invalid signature key!" });
           }
         }
 
         const transactionStatus = body.transaction_status;
         const rawOrderId = body.order_id;
-
-        // Ambil invoiceID asli (menghapus suffix timestamp unik)
         const cleanInvoice = rawOrderId.split('-')[0];
 
-        console.log(`[Verified Webhook] Invoice: ${cleanInvoice} | Status: ${transactionStatus}`);
+        // Ambil data tambahan dari custom_field Midtrans jika ada
+        const packageId = body.custom_field1 || "";
+        const infoPelanggan = body.custom_field2 || "";
 
-        // Jika transaksi berhasil (settlement atau capture)
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
-          
-          // LINK NEW DEPLOYMENT GOOGLE APPS SCRIPT
           const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbxb8OXv8jj2A4tISbOjxIPF1jqm07K3zowleSnh9a5nlgnDrIV2B4pMKkx8f9ua0OvMbA/exec";
 
-          // Mengirim hanya nomor invoice agar Step 2 di Web berubah jadi Centang Ungu
           await fetch(sheetWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              invoice: cleanInvoice
+              invoice: cleanInvoice,
+              package_id: packageId,
+              informasi_pelanggan: infoPelanggan
             })
           }).catch(err => console.error("Gagal sync ke Sheet:", err));
         }
 
-        // Beri respon 200 OK ke Midtrans agar tidak dikirim ulang
-        return res.status(200).json({ status: "OK", message: "Webhook verified & processed successfully" });
+        return res.status(200).json({ status: "OK", message: "Webhook processed" });
       }
 
       // ============================================================
-      // B. JIKA INI REQUEST BIASA DARI FRONTEND (MEMINTA SNAP TOKEN)
+      // B. REQUEST TOKENS SNAP DARI FRONTEND
       // ============================================================
-      const { orderId, amount } = body;
+      const { orderId, amount, packageId, customerInfo } = body;
 
       if (!orderId || !amount) {
         return res.status(400).json({ error: "orderId dan amount wajib diisi!" });
       }
 
-      // Inisialisasi Midtrans Snap Client
       const snap = new midtransClient.Snap({
         isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
         serverKey: serverKey
@@ -92,13 +78,14 @@ export default async function handler(req, res) {
         transaction_details: {
           order_id: String(orderId),
           gross_amount: Number(amount)
-        }
+        },
+        // Menyimpan packageId dan customerInfo ke dalam custom_field Midtrans
+        custom_field1: packageId ? String(packageId) : "",
+        custom_field2: customerInfo ? String(customerInfo) : ""
       };
 
-      // Buat transaksi di Midtrans
       const transaction = await snap.createTransaction(parameter);
 
-      // Kirim Snap Token & Redirect URL balik ke Frontend
       return res.status(200).json({
         token: transaction.token,
         redirect_url: transaction.redirect_url
@@ -110,6 +97,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // Jika method lain
   return res.status(405).json({ message: "Method not allowed" });
 }

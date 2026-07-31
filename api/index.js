@@ -56,15 +56,15 @@ export default async function handler(req, res) {
         // Jika transaksi berhasil (settlement atau capture)
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
           
-          // URL WEBHOOK GOOGLE APPS SCRIPT (LINK DEPLOYMENT BARU)
-          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbwj3Q7E_cDbVRBM_AaWu0ie-Yt58i6lnCro6wpcNc2C9RHjp-puabIGWlDKZcJTm-ZLQw/exec";
+          // LINK NEW DEPLOYMENT GOOGLE APPS SCRIPT
+          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbxb8OXv8jj2A4tISbOjxIPF1jqm07K3zowleSnh9a5nlgnDrIV2B4pMKkx8f9ua0OvMbA/exec";
 
+          // Mengirim hanya nomor invoice agar Step 2 di Web berubah jadi Centang Ungu
           await fetch(sheetWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              invoice: cleanInvoice,
-              status: "success"
+              invoice: cleanInvoice
             })
           }).catch(err => console.error("Gagal sync ke Sheet:", err));
         }

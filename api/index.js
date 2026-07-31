@@ -56,8 +56,8 @@ export default async function handler(req, res) {
         // Jika transaksi berhasil (settlement atau capture)
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
           
-          // URL WEBHOOK TERBARU GOOGLE APPS SCRIPT
-          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbxzEZU4D2Ra1LSiyrY5Q9K2QKBMuC8H-_dxzRjKTLU5B2-WK_SBYZvFfG2BOyDasenAFg/exec";
+          // URL WEBHOOK GOOGLE APPS SCRIPT (LINK DEPLOYMENT BARU)
+          const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbwj3Q7E_cDbVRBM_AaWu0ie-Yt58i6lnCro6wpcNc2C9RHjp-puabIGWlDKZcJTm-ZLQw/exec";
 
           await fetch(sheetWebhookUrl, {
             method: 'POST',

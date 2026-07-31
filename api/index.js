@@ -43,9 +43,9 @@ export default async function handler(req, res) {
         const packageId = body.custom_field1 || body.package_id || "";
         const infoPelanggan = body.custom_field2 || body.informasi_pelanggan || body.customer_info || "";
 
-        if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
-        // ✅ Ganti dengan URL Deployment Web App Anda yang BARU
-        const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbyuZenjpUU7TSD2GpAzTg7sOVYvYHMVSUfMBqAGxDD7-patPEt3dKmMGIsKPGvTFxCi8A/exec";
+       if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
+       // ✅ Menggunakan Link URL New Deployment Anda
+       const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbwQY_jKWSd0Dt2fdybp-j7OLF7XGVcPZPRYe5Jk41Eb42UXQ5ul3D6wqnnyBftF8S1tgg/exec";
           
           await fetch(sheetWebhookUrl, {
             method: 'POST',

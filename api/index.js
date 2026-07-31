@@ -39,9 +39,9 @@ export default async function handler(req, res) {
         const rawOrderId = body.order_id;
         const cleanInvoice = rawOrderId.split('-')[0];
 
-        // Ambil data tambahan dari custom_field Midtrans jika ada
-        const packageId = body.custom_field1 || "";
-        const infoPelanggan = body.custom_field2 || "";
+        // --- LANGKAH 2: Ambil data dari custom_field atau fallback key lain ---
+        const packageId = body.custom_field1 || body.package_id || "";
+        const infoPelanggan = body.custom_field2 || body.informasi_pelanggan || body.customer_info || "";
 
         if (transactionStatus === 'settlement' || transactionStatus === 'capture') {
           const sheetWebhookUrl = "https://script.google.com/macros/s/AKfycbxb8OXv8jj2A4tISbOjxIPF1jqm07K3zowleSnh9a5nlgnDrIV2B4pMKkx8f9ua0OvMbA/exec";
@@ -63,7 +63,11 @@ export default async function handler(req, res) {
       // ============================================================
       // B. REQUEST TOKENS SNAP DARI FRONTEND
       // ============================================================
-      const { orderId, amount, packageId, customerInfo } = body;
+      // --- LANGKAH 1: Tangkap variabel frontend (baik camelCase maupun snake_case) ---
+      const orderId = body.orderId || body.order_id;
+      const amount = body.amount;
+      const packageId = body.packageId || body.package_id;
+      const customerInfo = body.customerInfo || body.customer_info || body.informasi_pelanggan;
 
       if (!orderId || !amount) {
         return res.status(400).json({ error: "orderId dan amount wajib diisi!" });
@@ -79,7 +83,7 @@ export default async function handler(req, res) {
           order_id: String(orderId),
           gross_amount: Number(amount)
         },
-        // Menyimpan packageId dan customerInfo ke dalam custom_field Midtrans
+        // Menyimpan packageId dan customerInfo ke custom_field Midtrans
         custom_field1: packageId ? String(packageId) : "",
         custom_field2: customerInfo ? String(customerInfo) : ""
       };
